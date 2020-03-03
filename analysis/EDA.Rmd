@@ -18,8 +18,23 @@ library(gridExtra)
 source('../helper/plotting.R')
 ```
 
-```{r}
-data <- read_csv('../data/economic_indicators.csv')
+```{r, read-data, include=FALSE}
+#read data with set columns
+data <- read_csv('../data/economic_indicators.csv',
+                 col_types = cols(
+                   date = col_character(),
+                   gdp_change = col_double(),
+                   unrate = col_double(),
+                   nfjobs = col_double(),
+                   treas10yr = col_double(),
+                   treas3mo = col_double(),
+                   treas10yr3mo = col_double(),
+                   fedintrate = col_double(),
+                   libor3mo = col_double(),
+                   personincomechg = col_double(),
+                   corpprofitchg = col_double()
+                 )
+              )
 ```
 
 # Data
