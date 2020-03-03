@@ -1,0 +1,385 @@
+---
+title: "GDP_Prediction EDA"
+author: "Stuart Miller"
+date: "`r Sys.time()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tswge)
+library(gridExtra)
+source('../helper/plotting.R')
+```
+
+```{r}
+data <- read_csv('../data/economic_indicators.csv')
+```
+
+# Data
+
+There are 135 observations of 11 variables.
+
+## Variables
+
+| Variable | Description |
+|----------|-------------|
+| Date     | Date of observation |
+| gdp_change | Change in GDP from the previous observation |
+| unrate   | Unemployment rate |
+| nfjobs   | Non-farming jobs  |
+| treas10yr | 10 Year US Treasury Yield |
+| treas3mo | 3 Month US Treasury Yield |
+| treas10yr3mo | Difference between `treas10yr` and `treas3mo` |
+| fedintrate | US federal interest rate |
+| libor3mo | 3 Month LIBOR rate |
+| personincomechg | Personal income change |
+| corpprofitchg | Corporate profit change |
+
+Change in GDP (`gdp_change`) is the response variable.
+The observations are taken quarterly, starting at 1986 Q1 and ending 2019 Q3.
+
+# EDA
+
+## Univariate
+
+### gdp_change
+
+Based on the plot of the realization, the assuming the series has a constant, non-zero mean appears to be reasonable.
+The sample autocorrelations are positive and fall off quickly.
+The parzen window shows a dominate frequency at 0 with some evidence of frequencies at approximately 0.2, 0.3 and 0.45,
+which is confirmed by the periodogram.
+The ACF for the first and second half of the series do not appear to be the same, which is evidence against this data coming from a stationary process.
+
+```{r}
+vals <- plotts.sample.wge(data$gdp_change)
+
+acf(data$gdp_change[1:68])
+acf(data$gdp_change[69:135])
+```
+
+### unrate
+
+Based on the plot of the realization, a constant mean assumption seems reasonable.
+The parzen window and periodogram show system frequencies near zero.
+The periodogram suggests that the peak may be just above 0, possibly between 0.014 and 0.022.
+The sample autocorrelations are positive and fall off by the 10th lag.
+The sample autocorrelations of the first and second half of the realization apepar to be consistent.
+
+AIC suggests a model with AR order of 4 or 5 with a moving avarege component.
+However, an AR(3) fit to the realization appears to be sufficient to reduce the realization to white noise.
+Additionally, the fitted AR(3) as a root in the range suggested by the periodogram.
+Higher order models (4-5), keep this root and add factors with roots relatively far from the unit circle.
+
+The true plots of the AR(3) fit appear to be consistent with the behavior of the sample plots.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$unrate)
+
+acf(data$unrate[1:68])
+acf(data$unrate[69:135])
+```
+
+**Model Fits**
+
+An AR(3) is fit below.
+The plot shows the behavior of the realization and the result of differencing the realization with the AR(3) fit.
+The resulting difference appears to be consistent with white noise.
+
+```{r}
+aic5.wge(data$unrate)
+
+est <- est.arma.wge(data$unrate, p = 3)
+vals <- artrans.wge(data$unrate, phi.tr = est$phi)
+```
+
+**True Plots of AR(3) Fit**
+
+The true characteristics of the AR(3) fit is plotted below.
+
+```{r}
+vals <- plotts.true.wge(135, phi = est$phi)
+```
+
+### nfjobs
+
+The realization appears to wander with a upward trend.
+The periodgram and parzen window show evidence of a dominate peak at zero.
+The sample autocorrelations are positive and fall off slowly.
+These sample plots appear to be consistent with a non-stationary time series with an upward trend.
+
+With the first difference taken, the result appears to be consistent with an ARMA process.
+AIC suggests a noise structure of AR(3).
+An AR(3) model fit appears to be sufficient to reduce the noise structure to white noise.
+
+An ARIMA(3,1,0) may be sufficient to model this realization.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$nfjobs)
+
+acf(data$nfjobs[1:68])
+acf(data$nfjobs[69:135])
+```
+
+
+**Model Fit**
+
+When the first difference is taken from the realization, the noise structure appears to be consistent with an ARMA model.
+AIC suggests an AR(3).
+When the fitted AR(3) is differenced with the noise, the result appears to be white noise.
+
+```{r}
+nfjobs.first.diff <- artrans.wge(data$nfjobs, phi.tr = c(1))
+plotts.sample.wge(nfjobs.first.diff)
+aic5.wge(nfjobs.first.diff)
+nfjobs.diff.model <- est.arma.wge(nfjobs.first.diff, p = 3)
+vals <- artrans.wge(nfjobs.first.diff, phi.tr = nfjobs.diff.model$phi)
+```
+
+
+### treas10yr
+
+This realization appears to trend downward.
+A constant mean assumption does not appear to be reasonable for this realization.
+The sample autocorrelations are positive and drop off slowly.
+The parzen window and periodogram show evidence of a root at 0.
+These plots are consistent with a non-stationary process.
+
+An ARIMA(0,1,0) appears to be sufficient to model this realization.
+When the first difference is taken, the result appears to be consistent with white noise.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$treas10yr)
+
+acf(data$treas10yr[1:68])
+acf(data$treas10yr[69:135])
+```
+
+
+**Model Fit**
+
+When the first difference is taken from the realization, the noise structure appears to be consistent with an white noise.
+
+```{r}
+treas10yr.first.diff <- artrans.wge(data$treas10yr, phi.tr = c(1))
+plotts.sample.wge(treas10yr.first.diff)
+```
+
+
+### treas3mo
+
+This realization appears to be consistent with a downward trend with wandering or psuedo-periodic behavior.
+The autocorrelations are positive and decrease relatively quickly was the lags increase.
+However, the autocorrelations do not go to zero, which could suggest a non-stationary process.
+The ACF for the first and second half of the realization appear to be similar.
+When the ACF is calculated on half of the realization, the ACF apprears as damped exponentials in a sinusiodal envolope.
+This is typically evidence of an AR process with a complex root.
+
+Since there appears to be a downward trend, a linear model was fit and the downward trend was removed
+(however, we would not expect a negative treasury yield).
+The resulting series appears to be consistent with an AR process with a complex root - 
+pseudo-periodic behavior is present and the ACF are damped exponentials in a sinusiodal envolope.
+An ARMA(2,1) was suggested by AIC for the noise structure.
+When the AR(2) portion of the ARMA(2,1) fit to the noise is removed from the noise, the results is consistent with an MA(1).
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$treas3mo)
+
+acf(data$treas3mo[1:68])
+acf(data$treas3mo[69:135])
+```
+
+
+**Model Fit**
+
+When a linear model is fit, the resulting noise structure appear to be consistent with an ARMA process with a complex AR root.
+A ARMA(2,1) was suggested by AIC.
+When the AR(2) portion of the model is removed, the resulting noise appears to be consistent with an MA(1).
+
+
+```{r}
+lin.model <- lm(data$treas3mo ~ seq_along(data$treas3mo))
+plotts.sample.wge(lin.model$residuals)
+aic5.wge(lin.model$residuals)
+est <- est.arma.wge(lin.model$residuals, p = 2, q = 1)
+artrans.wge(lin.model$residuals, phi.tr = est$phi)
+```
+
+### treas10yr3mo
+
+This realization appears to be consistent with an AR process with a complex root.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$treas10yr3mo)
+
+acf(data$treas10yr3mo[1:68])
+acf(data$treas10yr3mo[69:135])
+```
+
+
+**Model Fit**
+
+A AR(3) model is suggested by AIC.
+A AR(3) appears to be sufficient to model is realization.
+When the fitted AR(3) is removed from the realization, the result appears to be consistent with white noise.
+
+```{r}
+aic5.wge(data$treas10yr3mo)
+est <- est.arma.wge(data$treas10yr3mo, p = 3)
+artrans.wge(data$treas10yr3mo, phi.tr = est$phi)
+```
+
+### fedintrate
+
+The behavior of this realization appear to be correlated to `treas3mo`.
+The scatter plot of `fedintrate` vs `treas3mo` shows that there is a strong correlation between the two variables,
+$\rho = 0.994$
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$fedintrate)
+
+acf(data$fedintrate[1:68])
+acf(data$fedintrate[69:135])
+
+lm.fedtreas3mo <- lm(data$fedintrate ~ data$treas3mo)
+plot(data$fedintrate, data$treas3mo)
+cor(data$fedintrate, data$treas3mo)
+```
+
+
+### libor3mo
+
+Like `fedintrate`, `libor3mo` appears to be highly correlated to `treas3mo`, $\rho = 0.990$.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$libor3mo)
+
+acf(data$libor3mo[1:68])
+acf(data$libor3mo[69:135])
+
+lm.fedtreas3mo <- lm(data$libor3mo ~ data$treas3mo)
+plot(data$libor3mo, data$treas3mo)
+cor(data$libor3mo, data$treas3mo)
+```
+
+
+### personincomechg
+
+The sample plots seem to suggest an ARMA process with more than one complex autoregressive root.
+BIC suggests a model order of ARMA(5,0).
+When a fitted AR(5) model is removed from the realization, the result appears to be consistent with white noise.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$personincomechg)
+
+acf(data$personincomechg[1:68])
+acf(data$personincomechg[69:135])
+```
+
+
+**Model Fit**
+
+A AR(5) model is suggested by BIC.
+When the fitted AR(5) is removed from the realization, the result appears to be consistent with white noise.
+
+```{r}
+aic5.wge(data$personincomechg, p = 0:10, type = 'bic')
+est <- est.arma.wge(data$personincomechg, p = 5)
+artrans.wge(data$personincomechg, phi.tr = est$phi)
+```
+
+
+### corpprofitchg
+
+The sample plots appear to be consistent with white noise.
+Additionally, the model chosen by AIC is an ARMA(0,0), which is consistent with white noise.
+
+**Sample Plots**
+
+```{r}
+vals <- plotts.sample.wge(data$corpprofitchg)
+
+acf(data$corpprofitchg[1:68])
+acf(data$corpprofitchg[69:135])
+aic5.wge(data$corpprofitchg, p = 0:5)
+```
+
+## Multivariate
+
+Look at correlation between gdp and lags of the other variables.
+
+### GDP Change vs Unemployment Rate
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'treas10yr', 11)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
