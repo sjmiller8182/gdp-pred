@@ -331,37 +331,95 @@ Look at correlation between gdp and lags of the other variables.
 
 ### GDP Change vs Unemployment Rate
 
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `unrate`.
+
 ```{r, fig.width=10, fig.height=10}
-plot.cross.lags(data, 'gdp_change', 'treas10yr', 11)
+plot.cross.lags(data, 'gdp_change', 'unrate', 19)
 ```
 
 
 
 
+### GDP Change vs Non-farm Jobs
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `nfjobs`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'nfjobs', 19)
+```
 
 
+### GDP Change vs 10 Year Treasury Yield
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `treas10yr`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'treas10yr', 19)
+```
 
 
+### GDP Change vs 3 Month Treasury Yield
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `treas3mo`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'treas3mo', 19)
+```
 
 
+### GDP Change vs Treasury Yield 10 Year 3 Month Difference
+
+There is evidence of a weak correlation between `gdp_change` and the 2nd and 8th lags of `treas10yr3mo`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'treas10yr3mo', 19)
+```
 
 
+### GDP Change vs Federal Interest Rate
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `fedintrate`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'fedintrate', 19)
+```
 
 
+### GDP Change vs 3 Month LIBOR
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `libor3mo`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'libor3mo', 19)
+```
 
 
+### GDP Change vs Change in Personal Income
+
+There is evidence of a weak correlation between `gdp_change` and the first 4 lags of `personincomechg`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'personincomechg', 19)
+```
 
 
+### GDP Change vs Change in Corparate Profits
+
+There does not seem to be a correlation between change in GDP and lags of change in corparate profits.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'corpprofitchg', 19)
+```
 
 
+### Explanatory Variables
 
+There is strong evidence of linear relationships between `fedintrate`, `libor3mo`, and `treas3mo`.
+`corpprofitchg` does not seem to be correlated to anything.
 
-
-
-
-
-
-
+```{r, fig.width=10, fig.height=10}
+pairs(data[3:11])
+```
 
 
 
