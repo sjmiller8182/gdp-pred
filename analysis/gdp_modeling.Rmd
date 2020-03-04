@@ -1,0 +1,302 @@
+---
+title: "gdp_modeling"
+author: "Stuart Miller"
+date: "March 3, 2020"
+output:
+  github_document:
+    toc: yes
+    toc_depth: 6
+  html_document:
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tswge)
+library(gridExtra)
+```
+
+```{r, read-data, include=FALSE}
+#read data with set columns
+data <- read_csv('../data/economic_indicators.csv',
+                 col_types = cols(
+                   date = col_character(),
+                   gdp_change = col_double(),
+                   unrate = col_double(),
+                   nfjobs = col_double(),
+                   treas10yr = col_double(),
+                   treas3mo = col_double(),
+                   treas10yr3mo = col_double(),
+                   fedintrate = col_double(),
+                   libor3mo = col_double(),
+                   personincomechg = col_double(),
+                   corpprofitchg = col_double()
+                 )
+              )
+gdp <- data$gdp_change
+```
+
+
+# Modeling Requirements
+
+* At least 2 candidate ARMA / ARIMA models
+* The models in factored form with standard deviation.
+* AIC
+* ASE
+* Visualization of Forecasts with a Practical Horizon.
+
+# Univariate Modeling
+
+## Plots
+
+From the realization, a constant mean seems to be a reasonable assumption.
+The ACF may suggest an AR-type model.
+However, it is possible that there is a hint of oscillation in the ACF.
+
+```{r}
+vals <- plotts.sample.wge(gdp)
+```
+
+
+```{r}
+pacf(gdp)
+```
+
+## Order Selection by AIC/BIC
+
+Using aic5 to fit models based on MLE, 4 of the same model orders are selected by AIC and BIC
+
+* ARMA(1, 1)
+* ARMA(2, 0)
+* ARMA(1, 2)
+* ARMA(1, 2)
+
+```{r}
+# should fits for AIC and BIC
+bic_vals <- aic5.wge(gdp, type = 'bic')
+aic_vals <- aic5.wge(gdp, type = 'aic')
+cbind(bic_vals,aic_vals)
+```
+
+## Assessment of Fits
+
+Since the AIC and BIC selection methods selected ARMA(1,1), lets look at the ARMA(1,1).
+Since the PACF shows two partial autocorrelation, lets look at the AR(2).
+
+### ARMA(1,1)
+
+The ARMA(1,1) is fit.
+The AR root is dominate, but it is a relatively low value.
+The MA root is should have little impact.
+
+```{r}
+est1 <- est.arma.wge(gdp, 1, 1)
+factor.wge(est1$theta)
+```
+
+When the AR(1) from the ARMA(1,1) fit is removed from the realization,
+the result appears to be consistent with an MA(1), which is consistent.
+
+```{r}
+est1 <- est.arma.wge(gdp, 1, 1)
+artrans.wge(gdp, phi.tr = est1$phi)
+```
+
+Additionally, the true plots for the fitted phi and theta values seem generally consistent with the sample plots.
+
+```{r}
+plotts.true.wge(n = 135, phi = est1$phi, theta = est1$theta, vara = est1$avar)
+```
+
+
+### AR(2)
+
+The AR(2) is fit.
+Both AR roots are relatively low in value of the abs reciprocal.
+
+```{r}
+est2 <- est.arma.wge(gdp, 2, 0)
+```
+
+When the AR(2) fit is removed from the realization, the result appears to be consistent with white noise (at least from the ACF)
+
+```{r}
+est2 <- est.arma.wge(gdp, 2)
+vals <- artrans.wge(gdp, phi.tr = est2$phi)
+```
+
+Additionally, the true plots for the fitted phi and theta values seem generally consistent with the sample plots.
+
+```{r}
+plotts.true.wge(n = 135, phi = est2$phi, theta = est2$theta, vara = est2$avar)
+```
+
+
+# Forecast The Models
+
+## Forecast with a Sliding Window
+
+* Window size: 25
+* Validation size = 12
+* Window step size = 12
+
+```{r}
+# control loop variables
+n.head <- 12             # size of the validation forecast
+window.size <- 25        # size of the rolling window (train and test)
+                         # training size is `window.size - n.head + 1`
+window.start.step <- 12  # size of the step to take between each iteration
+
+# create dummy vactors ot hold ASE values
+f1.mse.values <- c(1:9)
+f2.mse.values <- c(1:9)
+
+# collect the overall forecasts and limits
+f1.fcast <- c(rep(NA,135))
+f1.fcast.ul <- c(rep(NA,135))
+f1.fcast.ll <- c(rep(NA,135))
+f2.fcast <- c(rep(NA,135))
+f2.fcast.ul <- c(rep(NA,135))
+f2.fcast.ll <- c(rep(NA,135))
+
+# roll over the realization
+ for (i in seq(0,9)){
+   
+   idx.start <- i * window.start.step + 1
+   idx.end <- idx.start + window.size
+   # forecast with f1
+   f1 <- fore.aruma.wge(gdp[ idx.start : idx.end ],
+                        phi = est1$phi,
+                        theta = est1$theta, 
+                        plot = F, 
+                        n.ahead = n.head, 
+                        lastn = T)
+   
+   # get the rolling forecast and limits
+   for (j in seq(1, n.head)){
+     f1.fcast[idx.end - n.head + j] <- f1$f[j]
+     f1.fcast.ul[idx.end - n.head + j] <- f1$ul[j]
+     f1.fcast.ll[idx.end - n.head + j] <- f1$ll[j]
+   }
+   
+   # calculate ASE from f1 forecast
+   f1.mse.values[i+1] <- mean( ( gdp[ (idx.end - n.head + 1) : idx.end ] - f1$f )^2 )
+   
+   # forecast with f2
+   f2 <- fore.aruma.wge(gdp[ idx.start : idx.end ],
+                        phi = est2$phi,
+                        theta = est2$theta, 
+                        plot = F, 
+                        n.ahead = n.head, 
+                        lastn = T)
+   
+   # get the rolling forecast and limits
+   for (j in seq(1, n.head)){
+     f2.fcast[idx.end - n.head + j] <- f2$f[j]
+     f2.fcast.ul[idx.end - n.head + j] <- f2$ul[j]
+     f2.fcast.ll[idx.end - n.head + j] <- f2$ll[j]
+   }
+   
+   # calculate ASE from f2 forecast
+   f2.mse.values[i+1] <- mean( ( gdp[ (idx.end - n.head + 1) : idx.end ] - f2$f )^2 )
+ }
+
+# put the ASE values in a dataframe for plotting
+model.res <- data.frame(
+  ASE = c(f1.mse.values, f2.mse.values),
+  Model = factor(c(rep('Model 1',length(f1.mse.values)),rep('Model 2',length(f2.mse.values))))
+)
+
+# just formatting the data to make the plot easier
+f1.data <- data.frame(
+  Realization = gdp[seq_along(f1.fcast)],
+  Forecast = f1.fcast,
+  UpperLimit = f1.fcast.ul,
+  LowerLimit = f1.fcast.ll,
+  Time = seq_along(f1.fcast),
+  Model = rep('Model 1',length(f1.fcast))
+)
+f1.data <- gather(f1.data, Series, Value, Realization:LowerLimit, factor_key = T)
+
+f2.data <- data.frame(
+  Realization = gdp[seq_along(f2.fcast)],
+  Forecast = f2.fcast,
+  UpperLimit = f2.fcast.ul,
+  LowerLimit = f2.fcast.ll,
+  Time = seq_along(f2.fcast),
+  Model = rep('Model 2',length(f2.fcast))
+)
+f2.data <- gather(f2.data, Series, Value, Realization:LowerLimit, factor_key = T)
+f1f2 <- rbind(f1.data, f2.data)
+
+```
+
+## Compare ASE Values
+
+The ASE values from the two models appear to be very similar.
+The outlying error (approximately 22), is the large dip in the series, which both models miss.
+
+```{r}
+p1 <- data.frame(
+  Model = as.factor(c(rep('Model.1', length(f1.mse.values)),
+                      rep('Model.2', length(f2.mse.values)))),
+  ASE = c(f1.mse.values, f2.mse.values)
+) %>%
+  ggplot(aes(y = ASE)) +
+  geom_boxplot() +
+  facet_wrap(~ Model) +
+  ggtitle('Boxplots of ASEs') +
+  xlab('Model')
+
+p2 <- data.frame(
+  Model.1.ASE = f1.mse.values,
+  Model.2.ASE = f2.mse.values
+) %>%
+  ggplot(aes(y = f1.mse.values, x = f2.mse.values)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  ggtitle('Model ASE Correlation') +
+  xlab('Model 2 ASE Values') +
+  ylab('Model 1 ASE Values')
+
+grid.arrange(p1, p2, ncol = 2, top = 'Model ASE Plots')
+```
+
+
+## Forecast Plots
+
+Based on the plots of the sliding window forecasts, the models show similar forecast performance.
+Both models miss the dip just after the start of the window and the large dip just before step 100.
+Generally, both models appeat to capture the movement of the mean.
+The intervals appear to be reasonable.
+
+```{r, fig.width=15, message=FALSE, warning=FALSE}
+ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
+  geom_line() +
+  facet_wrap(~ Model, dir = 'v') + 
+  geom_vline(xintercept = window.size - n.head + 2) +
+  #geom_text(aes(x=27, label="\nForecast", y=7000), colour="blue", angle=0, size = 6) +
+  #geom_text(aes(x=13, label="\nInitial\nTraining", y=7000), colour="blue", angle=0, size = 6) +
+  labs(title = 'Forecasts and Prediction Limits for Model 1 & 2') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
