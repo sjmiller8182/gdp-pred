@@ -113,7 +113,7 @@ artrans.wge(gdp, phi.tr = est1$phi)
 Additionally, the true plots for the fitted phi and theta values seem generally consistent with the sample plots.
 
 ```{r}
-plotts.true.wge(n = 135, phi = est1$phi, theta = est1$theta, vara = est1$avar)
+true_vals <- plotts.true.wge(n = 135, phi = est1$phi, theta = est1$theta, vara = est1$avar)
 ```
 
 
@@ -141,7 +141,7 @@ vals <- artrans.wge(gdp, phi.tr = est2$phi)
 Additionally, the true plots for the fitted phi and theta values seem generally consistent with the sample plots.
 
 ```{r}
-plotts.true.wge(n = 135, phi = est2$phi, theta = est2$theta, vara = est2$avar)
+true_vals <- plotts.true.wge(n = 135, phi = est2$phi, theta = est2$theta, vara = est2$avar)
 ```
 
 
