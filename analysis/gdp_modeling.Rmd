@@ -92,9 +92,14 @@ The ARMA(1,1) is fit.
 The AR root is dominate, but it is a relatively low value.
 The MA root is should have little impact.
 
+$$
+\left( 1 - 0.7887B \right) X_t = \left( 1-0.4513B \right) a_t, \,\,\, \sigma^2_a=5.162
+$$
+
 ```{r}
 est1 <- est.arma.wge(gdp, 1, 1)
 factor.wge(est1$theta)
+print(paste('estimated white noise variance: ', est1$avar))
 ```
 
 When the AR(1) from the ARMA(1,1) fit is removed from the realization,
@@ -117,8 +122,13 @@ plotts.true.wge(n = 135, phi = est1$phi, theta = est1$theta, vara = est1$avar)
 The AR(2) is fit.
 Both AR roots are relatively low in value of the abs reciprocal.
 
+$$
+\left( 1 - 0.6777B \right) \left( 1 + 0.3456B \right) X_t =  a_t, \,\,\, \sigma^2_a=5.163
+$$
+
 ```{r}
 est2 <- est.arma.wge(gdp, 2, 0)
+print(paste('estimated white noise variance: ', est2$avar))
 ```
 
 When the AR(2) fit is removed from the realization, the result appears to be consistent with white noise (at least from the ACF)
@@ -139,16 +149,16 @@ plotts.true.wge(n = 135, phi = est2$phi, theta = est2$theta, vara = est2$avar)
 
 ## Forecast with a Sliding Window
 
-* Window size: 25
-* Validation size = 12
-* Window step size = 12
+* Window size: 12 (3 years)
+* Validation size: 6 (1.5 years)
+* Window step size: 6 (1.5 years)
 
 ```{r}
 # control loop variables
-n.head <- 12             # size of the validation forecast
-window.size <- 25        # size of the rolling window (train and test)
+n.head <- 6             # size of the validation forecast
+window.size <- 12        # size of the rolling window (train and test)
                          # training size is `window.size - n.head + 1`
-window.start.step <- 12  # size of the step to take between each iteration
+window.start.step <- 6  # size of the step to take between each iteration
 
 # create dummy vactors ot hold ASE values
 f1.mse.values <- c(1:9)
@@ -163,7 +173,7 @@ f2.fcast.ul <- c(rep(NA,135))
 f2.fcast.ll <- c(rep(NA,135))
 
 # roll over the realization
- for (i in seq(0,9)){
+ for (i in seq(0, 20)){
    
    idx.start <- i * window.start.step + 1
    idx.end <- idx.start + window.size
@@ -232,6 +242,9 @@ f2.data <- data.frame(
 f2.data <- gather(f2.data, Series, Value, Realization:LowerLimit, factor_key = T)
 f1f2 <- rbind(f1.data, f2.data)
 
+print(paste('The mean ASE for model 1:', mean(f1.mse.values)))
+print(paste('The mean ASE for model 2:', mean(f2.mse.values)))
+
 ```
 
 ## Compare ASE Values
@@ -270,8 +283,10 @@ grid.arrange(p1, p2, ncol = 2, top = 'Model ASE Plots')
 
 Based on the plots of the sliding window forecasts, the models show similar forecast performance.
 Both models miss the dip just after the start of the window and the large dip just before step 100.
-Generally, both models appeat to capture the movement of the mean.
+Generally, both models appear to capture the movement of the mean.
 The intervals appear to be reasonable.
+The intervals for model 2 appear to be slightly more tight around the series.
+This is particularly noticable at t = 100.
 
 ```{r, fig.width=15, message=FALSE, warning=FALSE}
 ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
@@ -285,18 +300,25 @@ ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
 ```
 
 
+# Model Comparison Summary
 
+The table below summarizes the model fit metrics.
+These show little difference between the two models.
 
+| Model | Type      | Mean ASE | AIC   | BIC   | WNV Estimate |
+|-------|-----------|----------|-------|-------|--------------|
+| 1     | ARMA(1,1) | 5.375    | 1.686 | 1.750 | 5.161 |
+| 2     | AR(2)     | 5.261    | 1.686 | 1.750 | 5.163 |
 
+**Model 1 Equation**
 
+$$
+\left( 1 - 0.7887B \right) X_t = \left( 1-0.4513B \right) a_t, \,\,\, \sigma^2_a=5.162
+$$
 
+**Model 2 Equation**
 
-
-
-
-
-
-
-
-
+$$
+\left( 1 - 0.6777B \right) \left( 1 + 0.3456B \right) X_t =  a_t, \,\,\, \sigma^2_a=5.163
+$$
 
