@@ -1,5 +1,5 @@
 ---
-title: "gdp_modeling"
+title: "GDP Modeling"
 author: "Stuart Miller"
 date: "March 3, 2020"
 output:
