@@ -1,5 +1,5 @@
 ---
-title: "GDP_Prediction EDA"
+title: "Exploratory Data Analysis of Economic Indicators"
 author: "Stuart Miller"
 date: "`r Sys.time()`"
 output:
@@ -441,24 +441,4 @@ data %>%
   select(-c('date', 'gdp_change')) %>%
   ggpairs()
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
