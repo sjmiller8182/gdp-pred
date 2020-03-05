@@ -1,7 +1,7 @@
 ---
 title: "GDP Modeling"
 author: "Stuart Miller"
-date: "March 3, 2020"
+date: "`r Sys.time()`"
 output:
   github_document:
     toc: yes
