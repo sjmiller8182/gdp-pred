@@ -1,4 +1,5 @@
-# gdp-pred
+# US GDP Prediction from Economic Factors
+
 Time series prediction of US GDP
 
 ## Repo Structure
