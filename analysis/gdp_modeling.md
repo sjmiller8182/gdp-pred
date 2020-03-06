@@ -1,21 +1,7 @@
-gdp\_modeling
+GDP Modeling
 ================
 Stuart Miller
-March 3, 2020
-
-  - [Modeling Requirements](#modeling-requirements)
-  - [Univariate Modeling](#univariate-modeling)
-      - [Plots](#plots)
-      - [Order Selection by AIC/BIC](#order-selection-by-aicbic)
-      - [Assessment of Fits](#assessment-of-fits)
-          - [ARMA(1,1)](#arma11)
-          - [AR(2)](#ar2)
-  - [Forecast The Models](#forecast-the-models)
-      - [Forecast with a Sliding
-        Window](#forecast-with-a-sliding-window)
-      - [Compare ASE Values](#compare-ase-values)
-      - [Forecast Plots](#forecast-plots)
-  - [Model Comparison Summary](#model-comparison-summary)
+2020-03-05 18:59:20
 
 # Modeling Requirements
 
@@ -29,31 +15,56 @@ March 3, 2020
 
 ## Plots
 
-From the realization, a constant mean seems to be a reasonable
-assumption. The ACF may suggest an AR-type model. However, it is
-possible that there is a hint of oscillation in the ACF.
+**Assess Constant Mean**
+
+Based on the realization, it looks like there may be a slight downward
+trend. This appears to be more pronounced prior to time step 75. After
+time step 75, the movement of the realization appears to be more flat.
+We will assume that the assumption of constant mean is not met.
+
+**Assess Constant Variance**
+
+The variance of the realization appears to be larger eariler in the
+realization (around and before 75). Later in time, the variance of the
+realization appears to decrease. Based on these observations and because
+only one realization is possible, we will assume that the assumption of
+constant variance is not met.
+
+**Assess Constant ACF**
+
+The ACF of teh first half and the ACF of the second half appear to be
+different. Both show expotentially dampped autocorrelations from 0, but
+these autocorrelations fall off slower in the first half. Additionally,
+the ACFs show different oscillator behavior.
+
+**Conclusion**
+
+Given the assessment of stationary above, we propose that this
+realization does not meet the requirements of a stationary process.
 
 ``` r
-vals <- plotts.sample.wge(gdp)
+vals <- plotts.sample.wge(gdp, lag.max = 50)
 ```
 
 ![](gdp_modeling_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
 ``` r
-pacf(gdp)
+size = length(gdp)
+acf(gdp[1:size/2], lag.max = 40)
+acf(gdp[(size/2+1):(size-1)], lag.max = 40)
 ```
 
-![](gdp_modeling_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](gdp_modeling_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
 
-## Order Selection by AIC/BIC
+## ARMA Fit
 
-Using aic5 to fit models based on MLE, 4 of the same model orders are
-selected by AIC and BIC
+### ARMA Order Selection by AIC/BIC
 
-  - ARMA(1, 1)
-  - ARMA(2, 0)
+The following models are suggested by both AIC and BIC
+
+  - ARMA(2, 1)
   - ARMA(1, 2)
-  - ARMA(1, 2)
+  - ARMA(3, 1)
 
 <!-- end list -->
 
@@ -80,179 +91,116 @@ aic_vals <- aic5.wge(gdp, type = 'aic')
 cbind(bic_vals,aic_vals)
 ```
 
-    ##      p    q        bic    p    q        aic
-    ## 5    1    1   1.750246    1    1   1.685685
-    ## 7    2    0   1.750466    2    0   1.685904
-    ## 4    1    0   1.771632    2    1   1.697374
-    ## 8    2    1   1.783456    1    2   1.697743
-    ## 6    1    2   1.783825    3    0   1.699064
+    ##       p    q        bic    p    q        aic
+    ## 8     2    1   2.467879    2    1   2.400740
+    ## 6     1    2   2.474865    3    1   2.405507
+    ## 5     1    1   2.477624    1    2   2.407727
+    ## 11    3    1   2.489430    2    2   2.408653
+    ## 9     2    2   2.492576    4    1   2.414109
 
-## Assessment of Fits
+### Fit ARMA Model
 
-Since the AIC and BIC selection methods selected ARMA(1,1), lets look at
-the ARMA(1,1). Since the PACF shows two partial autocorrelation, lets
-look at the AR(2).
-
-### ARMA(1,1)
-
-The ARMA(1,1) is fit. The AR root is dominate, but it is a relatively
-low value. The MA root is should have little impact.
-
-\[
-\left( 1 - 0.7887B \right) X_t = \left( 1-0.4513B \right) a_t, \,\,\, \sigma^2_a=5.162
-\]
+A fit of the ARMA(2,1), which selected by AIC and BIC, as a root very
+close to one. This is also a suggestion of a non-stationary series.
 
 ``` r
-est1 <- est.arma.wge(gdp, 1, 1)
+est.arma <- est.arma.wge(gdp, 2, 1)
 ```
 
     ## 
     ## Coefficients of Original polynomial:  
-    ## 0.7887 
+    ## 1.2175 -0.2239 
     ## 
     ## Factor                 Roots                Abs Recip    System Freq 
-    ## 1-0.7887B              1.2679               0.7887       0.0000
+    ## 1-0.9917B              1.0084               0.9917       0.0000
+    ## 1-0.2257B              4.4298               0.2257       0.0000
     ##   
     ## 
 
 ``` r
-factor.wge(est1$theta)
+factor.wge(phi = est.arma$phi)
 ```
 
     ## 
     ## Coefficients of Original polynomial:  
-    ## 0.4513 
+    ## 1.2175 -0.2239 
     ## 
     ## Factor                 Roots                Abs Recip    System Freq 
-    ## 1-0.4513B              2.2160               0.4513       0.0000
+    ## 1-0.9917B              1.0084               0.9917       0.0000
+    ## 1-0.2257B              4.4298               0.2257       0.0000
     ##   
     ## 
 
 ``` r
-print(paste('estimated white noise variance: ', est1$avar))
-```
-
-    ## [1] "estimated white noise variance:  5.16156650251428"
-
-When the AR(1) from the ARMA(1,1) fit is removed from the realization,
-the result appears to be consistent with an MA(1), which is consistent.
-
-``` r
-est1 <- est.arma.wge(gdp, 1, 1)
+factor.wge(phi = est.arma$theta)
 ```
 
     ## 
     ## Coefficients of Original polynomial:  
-    ## 0.7887 
+    ## 0.9128 
     ## 
     ## Factor                 Roots                Abs Recip    System Freq 
-    ## 1-0.7887B              1.2679               0.7887       0.0000
+    ## 1-0.9128B              1.0955               0.9128       0.0000
     ##   
     ## 
 
+### Comparison of True Plots
+
+The true plots of the model fit are shown below. It is notable that the
+evidence of oscillation seen in the sample autocorrelation is not
+present in the true plots of the model
+fit.
+
 ``` r
-artrans.wge(gdp, phi.tr = est1$phi)
+vals <- plotts.true.wge(n = length(gdp), phi = est.arma$phi, theta = est.arma$theta, lag.max = 50)
+```
+
+![](gdp_modeling_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+## ARIMA Fit
+
+After taking the first difference, the only first autocorrelation
+appears to be significant. This suggests that an MA(1) may be sufficient
+to explain the noise after the first difference.
+
+``` r
+diff <- artrans.wge(data$gdp_change, phi.tr = 1, plottr = TRUE)
 ```
 
 ![](gdp_modeling_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-    ##   [1] -1.253526484  2.918306772 -0.016906493  2.229573470  2.804220177
-    ##   [6]  0.942246893  5.215486874 -2.981699674  5.319713498 -0.192966372
-    ##  [11]  3.342246893  1.322526949  0.895766930  0.005626902 -1.032399814
-    ##  [16]  6.081686781 -0.998599721 -1.111273144 -3.618313219  2.552113312
-    ##  [21]  4.622533395  0.409853526 -0.380286502  3.402813451  1.852106865
-    ##  [26]  0.657740214  2.288726856 -2.700006447  2.512673423  0.614080149
-    ##  [31]  4.429573470 -0.330993088  2.946473516 -1.294373098  3.292953479
-    ##  [36] -1.921133116  0.360560112  2.976053433  0.361966837  1.292953479
-    ##  [41]  4.656333488 -1.783106400  2.556333488 -0.026766465  3.677460158
-    ##  [46]  0.826753572 -0.642259786  0.914080149  0.992953479  3.192953479
-    ##  [51]  2.357740214 -0.752119758  0.340840167  3.171826809  3.936613544
-    ##  [56] -3.135219712  6.887320130 -5.245079684  2.491546753 -2.407046521
-    ##  [61]  3.874646707 -3.964793181  2.478873330  3.007040074  0.035206819
-    ##  [66]  0.623940121 -0.018313219  1.812673423  1.466193460  5.592953479
-    ##  [71] -0.135219712 -0.478879777  2.398586828  1.473233535  2.094360205
-    ##  [76]  2.142246893 -1.530993088  3.692953479  0.063373563  3.746473516
-    ##  [81] -2.225359740  0.029573470  2.239433442  1.056333488  1.056333488
-    ##  [86]  0.356333488  0.708446800 -4.033806540  4.930986642 -2.591553200
-    ##  [91] -7.830986642  1.178879777  2.349299860  2.846479963  4.401406726
-    ##  [96] -2.053526484  3.649293414 -0.295779823  0.987320130 -2.191553200
-    ## [101]  4.653520037 -1.916906493  3.428166744  1.540840167 -1.274653154
-    ## [106] -0.002819898  0.449293414  3.328166744 -2.480286502  3.859153386
-    ## [111]  1.598586828 -3.995779823  7.505633349  0.569006912 -2.463386456
-    ## [116]  0.712673423  2.933800093 -1.380286502 -2.108453247  1.521126670
-    ## [121]  3.438026716 -0.007046521  1.081686781  1.045066791  0.187320130
-    ## [126]  2.639433442  2.140840167 -0.047893135  3.156333488 -0.800006447
-    ## [131] -0.885919851  1.612673423  1.623940121  0.092953479
-
-Additionally, the true plots for the fitted phi and theta values seem
-generally consistent with the sample plots.
-
 ``` r
-true_vals <- plotts.true.wge(n = 135, phi = est1$phi, theta = est1$theta, vara = est1$avar)
+bic_vals <- aic5.wge(diff, type = 'bic')
 ```
 
-![](gdp_modeling_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
-
-### AR(2)
-
-The AR(2) is fit. Both AR roots are relatively low in value of the abs
-reciprocal.
-
-\[
-\left( 1 - 0.6777B \right) \left( 1 + 0.3456B \right) X_t =  a_t, \,\,\, \sigma^2_a=5.163
-\]
+    ## ---------WORKING... PLEASE WAIT... 
+    ## 
+    ## 
+    ## Five Smallest Values of  bic
 
 ``` r
-est2 <- est.arma.wge(gdp, 2, 0)
+aic_vals <- aic5.wge(diff, type = 'aic')
 ```
 
+    ## ---------WORKING... PLEASE WAIT... 
     ## 
-    ## Coefficients of Original polynomial:  
-    ## 0.3321 0.2342 
     ## 
-    ## Factor                 Roots                Abs Recip    System Freq 
-    ## 1-0.6777B              1.4757               0.6777       0.0000
-    ## 1+0.3456B             -2.8937               0.3456       0.5000
-    ##   
-    ## 
+    ## Five Smallest Values of  aic
 
 ``` r
-print(paste('estimated white noise variance: ', est2$avar))
+cbind(bic_vals,aic_vals)
 ```
 
-    ## [1] "estimated white noise variance:  5.16270090214452"
-
-When the AR(2) fit is removed from the realization, the result appears
-to be consistent with white noise (at least from the ACF)
+    ##       p    q        bic    p    q        aic
+    ## 2     0    1   2.448261    1    1   2.410123
+    ## 5     1    1   2.460657    0    1   2.414572
+    ## 3     0    2   2.523776    0    2   2.473242
+    ## 10    3    0   2.567351    5    0   2.490651
+    ## 13    4    0   2.580732    4    0   2.496508
 
 ``` r
-est2 <- est.arma.wge(gdp, 2)
+est.arima <- est.arma.wge(diff, 0, 1)
 ```
-
-    ## 
-    ## Coefficients of Original polynomial:  
-    ## 0.3321 0.2342 
-    ## 
-    ## Factor                 Roots                Abs Recip    System Freq 
-    ## 1-0.6777B              1.4757               0.6777       0.0000
-    ## 1+0.3456B             -2.8937               0.3456       0.5000
-    ##   
-    ## 
-
-``` r
-vals <- artrans.wge(gdp, phi.tr = est2$phi)
-```
-
-![](gdp_modeling_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
-
-Additionally, the true plots for the fitted phi and theta values seem
-generally consistent with the sample plots.
-
-``` r
-true_vals <- plotts.true.wge(n = 135, phi = est2$phi, theta = est2$theta, vara = est2$avar)
-```
-
-![](gdp_modeling_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 # Forecast The Models
 
@@ -272,8 +220,8 @@ window.size <- 12        # size of the rolling window (train and test)
 window.start.step <- 6  # size of the step to take between each iteration
 
 # create dummy vactors ot hold ASE values
-f1.mse.values <- c(1:9)
-f2.mse.values <- c(1:9)
+f1.mse.values <- c(1:19)
+f2.mse.values <- c(1:19)
 
 # collect the overall forecasts and limits
 f1.fcast <- c(rep(NA,135))
@@ -284,14 +232,14 @@ f2.fcast.ul <- c(rep(NA,135))
 f2.fcast.ll <- c(rep(NA,135))
 
 # roll over the realization
- for (i in seq(0, 20)){
+ for (i in seq(0, 30)){
    
    idx.start <- i * window.start.step + 1
    idx.end <- idx.start + window.size
    # forecast with f1
    f1 <- fore.aruma.wge(gdp[ idx.start : idx.end ],
-                        phi = est1$phi,
-                        theta = est1$theta, 
+                        phi = est.arma$phi,
+                        theta = est.arma$theta, 
                         plot = F, 
                         n.ahead = n.head, 
                         lastn = T)
@@ -308,8 +256,9 @@ f2.fcast.ll <- c(rep(NA,135))
    
    # forecast with f2
    f2 <- fore.aruma.wge(gdp[ idx.start : idx.end ],
-                        phi = est2$phi,
-                        theta = est2$theta, 
+                        d = 1,
+                        phi = 0,
+                        theta = est.arima$theta, 
                         plot = F, 
                         n.ahead = n.head, 
                         lastn = T)
@@ -356,13 +305,13 @@ f1f2 <- rbind(f1.data, f2.data)
 print(paste('The mean ASE for model 1:', mean(f1.mse.values)))
 ```
 
-    ## [1] "The mean ASE for model 1: 5.37465528584588"
+    ## [1] "The mean ASE for model 1: 18.34768548381"
 
 ``` r
 print(paste('The mean ASE for model 2:', mean(f2.mse.values)))
 ```
 
-    ## [1] "The mean ASE for model 2: 5.2610292788865"
+    ## [1] "The mean ASE for model 2: 13.2422988525228"
 
 ## Compare ASE Values
 
@@ -396,16 +345,12 @@ p2 <- data.frame(
 grid.arrange(p1, p2, ncol = 2, top = 'Model ASE Plots')
 ```
 
-![](gdp_modeling_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](gdp_modeling_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ## Forecast Plots
 
-Based on the plots of the sliding window forecasts, the models show
-similar forecast performance. Both models miss the dip just after the
-start of the window and the large dip just before step 100. Generally,
-both models appear to capture the movement of the mean. The intervals
-appear to be reasonable. The intervals for model 2 appear to be slightly
-more tight around the series. This is particularly noticable at t = 100.
+In the plots below, model 1 is the ARMA(2,1) model and model 2 is the
+ARIMA(0,1,1) model. The forecasts begin at the vertical line `t =` 8.
 
 ``` r
 ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
@@ -418,26 +363,23 @@ ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-![](gdp_modeling_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](gdp_modeling_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
-# Model Comparison Summary
+### Forecast Conclusion
 
-The table below summarizes the model fit metrics. These show little
-difference between the two models.
+The ARIMA(0,1,1) model generally appears to capture the movement of the
+realization better than the ARMA(2,1) model. The ARMA model appear to
+have forecast jumps that are not consistent with the realization; the
+ARIMA model does not exhibit this behavior. The prediction bounds of the
+ARIMA model also appear to show more confidence on the movement of the
+realization.
 
-| Model | Type      | Mean ASE | AIC   | BIC   | WNV Estimate |
-| ----- | --------- | -------- | ----- | ----- | ------------ |
-| 1     | ARMA(1,1) | 5.375    | 1.686 | 1.750 | 5.161        |
-| 2     | AR(2)     | 5.261    | 1.686 | 1.750 | 5.163        |
+**Rolling Window Validation Results**
 
-**Model 1 Equation**
+| Model        | ASE   |
+| ------------ | ----- |
+| ARMA(2,1)    | 18.35 |
+| ARIMA(0,1,1) | 13.24 |
 
-\[
-\left( 1 - 0.7887B \right) X_t = \left( 1-0.4513B \right) a_t, \,\,\, \sigma^2_a=5.162
-\]
-
-**Model 2 Equation**
-
-\[
-\left( 1 - 0.6777B \right) \left( 1 + 0.3456B \right) X_t =  a_t, \,\,\, \sigma^2_a=5.163
-\]
+The ARIMA model appears to be a better model of the realization than the
+ARMA model.

@@ -21,7 +21,7 @@ library(gridExtra)
 
 ```{r, read-data, include=FALSE}
 #read data with set columns
-data <- read_csv('../data/economic_indicators.csv',
+data <- read_csv('../data/economic_indicators_all_ex_3mo_china.csv',
                  col_types = cols(
                    date = col_character(),
                    gdp_change = col_double(),
@@ -52,27 +52,49 @@ gdp <- data$gdp_change
 
 ## Plots
 
-From the realization, a constant mean seems to be a reasonable assumption.
-The ACF may suggest an AR-type model.
-However, it is possible that there is a hint of oscillation in the ACF.
+**Assess Constant Mean**
+
+Based on the realization, it looks like there may be a slight downward trend.
+This appears to be more pronounced prior to time step 75.
+After time step 75, the movement of the realization appears to be more flat.
+We will assume that the assumption of constant mean is not met.
+
+**Assess Constant Variance**
+
+The variance of the realization appears to be larger eariler in the realization (around and before 75).
+Later in time, the variance of the realization appears to decrease.
+Based on these observations and because only one realization is possible,
+we will assume that the assumption of constant variance is not met.
+
+**Assess Constant ACF**
+
+The ACF of teh first half and the ACF of the second half appear to be different.
+Both show expotentially dampped autocorrelations from 0,
+but these autocorrelations fall off slower in the first half.
+Additionally, the ACFs show different oscillator behavior.
+
+**Conclusion**
+
+Given the assessment of stationary above, 
+we propose that this realization does not meet the requirements of a stationary process.
 
 ```{r}
-vals <- plotts.sample.wge(gdp)
+vals <- plotts.sample.wge(gdp, lag.max = 50)
+
+size = length(gdp)
+acf(gdp[1:size/2], lag.max = 40)
+acf(gdp[(size/2+1):(size-1)], lag.max = 40)
 ```
 
+## ARMA Fit
 
-```{r}
-pacf(gdp)
-```
+### ARMA Order Selection by AIC/BIC
 
-## Order Selection by AIC/BIC
+The following models are suggested by both AIC and BIC
 
-Using aic5 to fit models based on MLE, 4 of the same model orders are selected by AIC and BIC
-
-* ARMA(1, 1)
-* ARMA(2, 0)
+* ARMA(2, 1)
 * ARMA(1, 2)
-* ARMA(1, 2)
+* ARMA(3, 1)
 
 ```{r}
 # should fits for AIC and BIC
@@ -81,67 +103,43 @@ aic_vals <- aic5.wge(gdp, type = 'aic')
 cbind(bic_vals,aic_vals)
 ```
 
-## Assessment of Fits
+### Fit ARMA Model
 
-Since the AIC and BIC selection methods selected ARMA(1,1), lets look at the ARMA(1,1).
-Since the PACF shows two partial autocorrelation, lets look at the AR(2).
-
-### ARMA(1,1)
-
-The ARMA(1,1) is fit.
-The AR root is dominate, but it is a relatively low value.
-The MA root is should have little impact.
-
-$$
-\left( 1 - 0.7887B \right) X_t = \left( 1-0.4513B \right) a_t, \,\,\, \sigma^2_a=5.162
-$$
+A fit of the ARMA(2,1), which selected by AIC and BIC, as a root very close to one.
+This is also a suggestion of a non-stationary series.
 
 ```{r}
-est1 <- est.arma.wge(gdp, 1, 1)
-factor.wge(est1$theta)
-print(paste('estimated white noise variance: ', est1$avar))
-```
-
-When the AR(1) from the ARMA(1,1) fit is removed from the realization,
-the result appears to be consistent with an MA(1), which is consistent.
-
-```{r}
-est1 <- est.arma.wge(gdp, 1, 1)
-artrans.wge(gdp, phi.tr = est1$phi)
-```
-
-Additionally, the true plots for the fitted phi and theta values seem generally consistent with the sample plots.
-
-```{r}
-true_vals <- plotts.true.wge(n = 135, phi = est1$phi, theta = est1$theta, vara = est1$avar)
+est.arma <- est.arma.wge(gdp, 2, 1)
+factor.wge(phi = est.arma$phi)
+factor.wge(phi = est.arma$theta)
 ```
 
 
-### AR(2)
+### Comparison of True Plots
 
-The AR(2) is fit.
-Both AR roots are relatively low in value of the abs reciprocal.
-
-$$
-\left( 1 - 0.6777B \right) \left( 1 + 0.3456B \right) X_t =  a_t, \,\,\, \sigma^2_a=5.163
-$$
+The true plots of the model fit are shown below.
+It is notable that the evidence of oscillation seen in the sample autocorrelation is not present in the true plots of the model fit.
 
 ```{r}
-est2 <- est.arma.wge(gdp, 2, 0)
-print(paste('estimated white noise variance: ', est2$avar))
+vals <- plotts.true.wge(n = length(gdp), phi = est.arma$phi, theta = est.arma$theta, lag.max = 50)
 ```
 
-When the AR(2) fit is removed from the realization, the result appears to be consistent with white noise (at least from the ACF)
+
+## ARIMA Fit
+
+After taking the first difference, the only first autocorrelation appears to be significant.
+This suggests that an MA(1) may be sufficient to explain the noise after the first difference.
 
 ```{r}
-est2 <- est.arma.wge(gdp, 2)
-vals <- artrans.wge(gdp, phi.tr = est2$phi)
+diff <- artrans.wge(data$gdp_change, phi.tr = 1, plottr = TRUE)
+bic_vals <- aic5.wge(diff, type = 'bic')
+aic_vals <- aic5.wge(diff, type = 'aic')
+cbind(bic_vals,aic_vals)
 ```
 
-Additionally, the true plots for the fitted phi and theta values seem generally consistent with the sample plots.
 
 ```{r}
-true_vals <- plotts.true.wge(n = 135, phi = est2$phi, theta = est2$theta, vara = est2$avar)
+est.arima <- est.arma.wge(diff, 0, 1)
 ```
 
 
@@ -161,8 +159,8 @@ window.size <- 12        # size of the rolling window (train and test)
 window.start.step <- 6  # size of the step to take between each iteration
 
 # create dummy vactors ot hold ASE values
-f1.mse.values <- c(1:9)
-f2.mse.values <- c(1:9)
+f1.mse.values <- c(1:19)
+f2.mse.values <- c(1:19)
 
 # collect the overall forecasts and limits
 f1.fcast <- c(rep(NA,135))
@@ -173,14 +171,14 @@ f2.fcast.ul <- c(rep(NA,135))
 f2.fcast.ll <- c(rep(NA,135))
 
 # roll over the realization
- for (i in seq(0, 20)){
+ for (i in seq(0, 30)){
    
    idx.start <- i * window.start.step + 1
    idx.end <- idx.start + window.size
    # forecast with f1
    f1 <- fore.aruma.wge(gdp[ idx.start : idx.end ],
-                        phi = est1$phi,
-                        theta = est1$theta, 
+                        phi = est.arma$phi,
+                        theta = est.arma$theta, 
                         plot = F, 
                         n.ahead = n.head, 
                         lastn = T)
@@ -197,8 +195,9 @@ f2.fcast.ll <- c(rep(NA,135))
    
    # forecast with f2
    f2 <- fore.aruma.wge(gdp[ idx.start : idx.end ],
-                        phi = est2$phi,
-                        theta = est2$theta, 
+                        d = 1,
+                        phi = 0,
+                        theta = est.arima$theta, 
                         plot = F, 
                         n.ahead = n.head, 
                         lastn = T)
@@ -281,12 +280,8 @@ grid.arrange(p1, p2, ncol = 2, top = 'Model ASE Plots')
 
 ## Forecast Plots
 
-Based on the plots of the sliding window forecasts, the models show similar forecast performance.
-Both models miss the dip just after the start of the window and the large dip just before step 100.
-Generally, both models appear to capture the movement of the mean.
-The intervals appear to be reasonable.
-The intervals for model 2 appear to be slightly more tight around the series.
-This is particularly noticable at t = 100.
+In the plots below, model 1 is the ARMA(2,1) model and model 2 is the ARIMA(0,1,1) model.
+The forecasts begin at the vertical line `t =` `r window.size - n.head + 2`.
 
 ```{r, fig.width=15, message=FALSE, warning=FALSE}
 ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
@@ -299,26 +294,18 @@ ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+### Forecast Conclusion
 
-# Model Comparison Summary
+The ARIMA(0,1,1) model generally appears to capture the movement of the realization better than the ARMA(2,1) model.
+The ARMA model appear to have forecast jumps that are not consistent with the realization;
+the ARIMA model does not exhibit this behavior.
+The prediction bounds of the ARIMA model also appear to show more confidence on the movement of the realization.
 
-The table below summarizes the model fit metrics.
-These show little difference between the two models.
+**Rolling Window Validation Results**
 
-| Model | Type      | Mean ASE | AIC   | BIC   | WNV Estimate |
-|-------|-----------|----------|-------|-------|--------------|
-| 1     | ARMA(1,1) | 5.375    | 1.686 | 1.750 | 5.161 |
-| 2     | AR(2)     | 5.261    | 1.686 | 1.750 | 5.163 |
+| Model | ASE |
+|-------|-----|
+| ARMA(2,1) | 18.35 |
+| ARIMA(0,1,1) | 13.24 |
 
-**Model 1 Equation**
-
-$$
-\left( 1 - 0.7887B \right) X_t = \left( 1-0.4513B \right) a_t, \,\,\, \sigma^2_a=5.162
-$$
-
-**Model 2 Equation**
-
-$$
-\left( 1 - 0.6777B \right) \left( 1 + 0.3456B \right) X_t =  a_t, \,\,\, \sigma^2_a=5.163
-$$
-
+The ARIMA model appears to be a better model of the realization than the ARMA model.

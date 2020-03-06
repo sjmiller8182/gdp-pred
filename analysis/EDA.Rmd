@@ -23,17 +23,14 @@ source('../helper/plotting.R')
 
 ```{r, read-data, include=FALSE}
 #read data with set columns
-data <- read_csv('../data/economic_indicators.csv',
+data <- read_csv('../data/economic_indicators_all_ex_3mo_china.csv',
                  col_types = cols(
                    date = col_character(),
                    gdp_change = col_double(),
                    unrate = col_double(),
                    nfjobs = col_double(),
                    treas10yr = col_double(),
-                   treas3mo = col_double(),
-                   treas10yr3mo = col_double(),
                    fedintrate = col_double(),
-                   libor3mo = col_double(),
                    personincomechg = col_double(),
                    corpprofitchg = col_double()
                  )
@@ -79,7 +76,7 @@ The ACF for the first and second half of the series do not appear to be the same
 vals <- plotts.sample.wge(data$gdp_change)
 
 acf(data$gdp_change[1:68])
-acf(data$gdp_change[69:135])
+acf(data$gdp_change[69:195])
 ```
 
 ### unrate
