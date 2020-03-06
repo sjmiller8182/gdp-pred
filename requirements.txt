@@ -1,14 +1,10 @@
-
-# note may need to install other git api, see below
-# https://stackoverflow.com/questions/33294383/devtoolsinstall-git-over-ssh/33620182#33620182
-
-# analysis
+#analysis
 tidyverse
 tswge
 gridExtra
 GGally
 
-# build tools
+#builds
 rmarkdown
 yaml
-git2r
+git2r 
