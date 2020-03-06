@@ -1,7 +1,7 @@
 GDP Modeling
 ================
 Stuart Miller
-2020-03-05 19:05:23
+2020-03-05 19:08:40
 
 # Univariate Modeling
 
@@ -306,10 +306,6 @@ print(paste('The mean ASE for model 2:', mean(f2.mse.values)))
     ## [1] "The mean ASE for model 2: 13.2422988525228"
 
 ## Compare ASE Values
-
-The ASE values from the two models appear to be very similar. The
-outlying error (approximately 22), is the large dip in the series, which
-both models miss.
 
 ``` r
 p1 <- data.frame(
