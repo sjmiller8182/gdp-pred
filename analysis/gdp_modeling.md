@@ -1,15 +1,7 @@
 GDP Modeling
 ================
 Stuart Miller
-2020-03-05 18:59:20
-
-# Modeling Requirements
-
-  - At least 2 candidate ARMA / ARIMA models
-  - The models in factored form with standard deviation.
-  - AIC
-  - ASE
-  - Visualization of Forecasts with a Practical Horizon.
+2020-03-05 19:05:23
 
 # Univariate Modeling
 

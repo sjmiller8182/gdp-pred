@@ -40,14 +40,6 @@ gdp <- data$gdp_change
 ```
 
 
-# Modeling Requirements
-
-* At least 2 candidate ARMA / ARIMA models
-* The models in factored form with standard deviation.
-* AIC
-* ASE
-* Visualization of Forecasts with a Practical Horizon.
-
 # Univariate Modeling
 
 ## Plots
