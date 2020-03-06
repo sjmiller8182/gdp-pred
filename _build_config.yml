@@ -1,0 +1,11 @@
+
+# items to build
+packing_list:
+  - ./analysis/gdp_modeling.md
+  - ./analysis/EDA.md
+
+# build settings
+build_settings:
+  format: 'html_document'
+  output_dir: './docs'
+
