@@ -1,3 +1,10 @@
+<div class="topnav">
+  <a class="active" href="./index">Home</a>
+  <a href="./data">Data</a>
+  <a href="./EDA.html">Exploratory Data Analysis</a>
+  <a href="./gdp_modeling.html">Modeling of GDP</a>
+</div>
+
 
 # Data
 
