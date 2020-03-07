@@ -1,8 +1,8 @@
 
 # items to build
 packing_list:
-  - ./analysis/gdp_modeling.md
-  - ./analysis/EDA.md
+  - ./analysis/gdp_modeling.Rmd
+  - ./analysis/EDA.Rmd
 
 # build settings
 build_settings:
