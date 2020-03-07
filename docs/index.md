@@ -7,4 +7,4 @@ EDA file [here](./EDA.html)
 
 modeling file [here](gdp_modeling.html)
 
-<br/><img src='/analysis/gdp_modeling_files/figure-gfm/univariate-forecast-1.png'>
+<br/><img src='./images/univariate-forecast-1.png'>
