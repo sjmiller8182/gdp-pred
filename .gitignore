@@ -1,3 +1,12 @@
+## project level
+
+# builds in the analysis dir
+/analysis/*.html
+/analysis/*.md
+/analysis/*.png
+
+## Base R
+
 # History files
 .Rhistory
 .Rapp.history
