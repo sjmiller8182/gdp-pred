@@ -1,7 +1,4 @@
 ---
-title: "GDP Modeling"
-author: "Stuart Miller"
-date: "`r Sys.time()`"
 output:
   github_document:
     toc: yes
@@ -11,6 +8,53 @@ output:
     toc_depth: 6
     toc_float: yes
 ---
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+.topnav a {
+  float: left;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.topnav a.active {
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+
+<div class="topnav">
+  <a class="active" href="./index">Home</a>
+  <a href="./data">Data</a>
+  <a href="./EDA.html">Exploratory Data Analysis</a>
+  <a href="./gdp_modeling.html">Modeling of GDP</a>
+  <a href="https://github.com/sjmiller8182/gdp-pred/blob/master/analysis/gdp_modeling.Rmd">Veiw on GitHub</a>
+</div>
+
+
+
+# GDP Modeling
+
+**Stuart Miller**  
+**`r Sys.time()`**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -273,7 +317,7 @@ grid.arrange(p1, p2, ncol = 2, top = 'Model ASE Plots')
 In the plots below, model 1 is the ARMA(2,1) model and model 2 is the ARIMA(0,1,1) model.
 The forecasts begin at the vertical line `t =` `r window.size - n.head + 2`.
 
-```{r, fig.width=15, message=FALSE, warning=FALSE}
+```{r, univariate-forecast, fig.width=15, message=FALSE, warning=FALSE}
 ggplot(f1f2, aes(y = Value, x = Time, col = Series)) +
   geom_line() +
   facet_wrap(~ Model, dir = 'v') + 
