@@ -304,7 +304,7 @@ Look at correlation between gdp and lags of the other variables.
 There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `unrate`.
 
 ```{r, fig.width=10, fig.height=10}
-plot.cross.lags(data, 'gdp_change', 'unrate', 19)
+plot.cross.lags(data, 'gdp_change', 'unrate', 30)
 ```
 
 
@@ -315,7 +315,7 @@ plot.cross.lags(data, 'gdp_change', 'unrate', 19)
 There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `nfjobs`.
 
 ```{r, fig.width=10, fig.height=10}
-plot.cross.lags(data, 'gdp_change', 'nfjobs', 19)
+plot.cross.lags(data, 'gdp_change', 'nfjobs', 20)
 ```
 
 
@@ -324,7 +324,7 @@ plot.cross.lags(data, 'gdp_change', 'nfjobs', 19)
 There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `treas10yr`.
 
 ```{r, fig.width=10, fig.height=10}
-plot.cross.lags(data, 'gdp_change', 'treas10yr', 19)
+plot.cross.lags(data, 'gdp_change', 'treas10yr', 20)
 ```
 
 
@@ -349,7 +349,7 @@ plot.cross.lags(data, 'gdp_change', 'fedintrate', 19)
 There is evidence of a weak correlation between `gdp_change` and the first 4 lags of `personincomechg`.
 
 ```{r, fig.width=10, fig.height=10}
-plot.cross.lags(data, 'gdp_change', 'personincomechg', 19)
+plot.cross.lags(data, 'gdp_change', 'personincomechg', 20)
 ```
 
 
@@ -360,6 +360,111 @@ There does not seem to be a correlation between change in GDP and lags of change
 ```{r, fig.width=10, fig.height=10}
 plot.cross.lags(data, 'gdp_change', 'corpprofitchg', 19)
 ```
+
+### GDP Change vs CPI
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'cpi', 20)
+```
+
+
+### GDP Change vs population
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'population', 20)
+```
+
+
+### GDP Change vs crude_wti
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'crude_wti', 20)
+```
+
+
+
+### GDP Change vs ppi
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'ppi', 20)
+```
+
+
+### GDP Change vs gold
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'gold', 20)
+```
+
+### GDP Change vs japan
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'japan', 20)
+```
+
+
+### GDP Change vs UK
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'uk', 20)
+```
+
+
+
+```{r, fig.width=10, fig.height=10}
+ggpairs(data %>% select(-c(date, gdp_change)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,224 @@
+---
+output:
+  html_document:
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+  github_document:
+    toc: yes
+    toc_depth: 6
+---
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+.topnav a {
+  float: left;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.topnav a.active {
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+
+<div class="topnav">
+  <a class="active" href="./index">Home</a>
+  <a href="./data">Data</a>
+  <a href="./EDA.html">Exploratory Data Analysis</a>
+  <a href="./gdp_modeling.html">Modeling of GDP</a>
+  <a href="https://github.com/sjmiller8182/gdp-pred/blob/master/analysis/EDA.Rmd">GitHub</a>
+</div>
+
+
+
+
+# Exploratory Data Analysis of Economic Indicators
+
+**Stuart Miller**  
+**`r Sys.time()`**
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tswge)
+library(GGally)
+library(gridExtra)
+source('../helper/plotting.R')
+```
+
+```{r, read-data, include=FALSE}
+#read data with set columns
+data <- read_csv('../data/economic_indicators_all_ex_3mo_china.csv',
+                 col_types = cols(
+                   date = col_character(),
+                   gdp_change = col_double(),
+                   unrate = col_double(),
+                   nfjobs = col_double(),
+                   treas10yr = col_double(),
+                   fedintrate = col_double(),
+                   personincomechg = col_double(),
+                   corpprofitchg = col_double()
+                 )
+              )
+```
+
+
+
+## Multivariate
+
+Look at correlation between gdp and lags of the other variables.
+
+### GDP Change vs Unemployment Rate
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `unrate`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'unrate', 30)
+```
+
+
+
+
+### GDP Change vs Non-farm Jobs
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `nfjobs`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'nfjobs', 20)
+```
+
+
+### GDP Change vs 10 Year Treasury Yield
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `treas10yr`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'treas10yr', 20)
+```
+
+
+
+
+
+
+
+### GDP Change vs Federal Interest Rate
+
+There is evidence of a weak correlation between `gdp_change` and the first 10 lags of `fedintrate`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'fedintrate', 19)
+```
+
+
+
+
+### GDP Change vs Change in Personal Income
+
+There is evidence of a weak correlation between `gdp_change` and the first 4 lags of `personincomechg`.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'personincomechg', 20)
+```
+
+
+### GDP Change vs Change in Corparate Profits
+
+There does not seem to be a correlation between change in GDP and lags of change in corparate profits.
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'corpprofitchg', 19)
+```
+
+### GDP Change vs CPI
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'cpi', 20)
+```
+
+
+### GDP Change vs population
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'population', 20)
+```
+
+
+### GDP Change vs crude_wti
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'crude_wti', 20)
+```
+
+
+
+### GDP Change vs ppi
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'ppi', 20)
+```
+
+
+### GDP Change vs gold
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'gold', 20)
+```
+
+### GDP Change vs japan
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'japan', 20)
+```
+
+
+### GDP Change vs UK
+
+
+
+```{r, fig.width=10, fig.height=10}
+plot.cross.lags(data, 'gdp_change', 'uk', 20)
+```
+
+
+
+```{r, fig.width=10, fig.height=10}
+ggpairs(data %>% select(-c(date, gdp_change)))
+```
+
+
+
+
+
