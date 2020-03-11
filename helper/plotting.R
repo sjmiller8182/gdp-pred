@@ -9,13 +9,14 @@ library(gridExtra)
 #' @param response The response variable.
 #' @param explanatory The explanatory variable, which will be lagged.
 #' @param max.lags Number of lag plots to create.
+#' @param start.lag The number of lags behind the response variable to start.
 #'
-plot.cross.lags <- function(data, response, explanatory, max.lags){
+plot.cross.lags <- function(data, response, explanatory, max.lags, start.lag = 1){
   
   size = nrow(data)
   plots = list()
   
-  for (i in 0:max.lags){
+  for (i in start.lag:max.lags){
     plots[[paste('p', as.character(i))]] <- 
       ggplot(data = data.frame(data[1:(size - i), response],
                                data[(i + 1):size, explanatory]),
